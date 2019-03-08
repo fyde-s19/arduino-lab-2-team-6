@@ -40,18 +40,19 @@
 #define ACK     3       // Output to 8266
 #define ESP_RST 4       // Reset to ESP
 #define led     13
+#define green   7
 
 int     Pin_Number  = 255;
 int     Pin_Integer = 0;
 float   Pin_Float   = 0.0;
 
-char    ssid[32]        = "iPhoneXR"; 
-char    pass[32]        = "bullybully";
+//char    ssid[32]        = "iPhoneXR"; 
+//char    pass[32]        = "bullybully";
 
-//char    ssid[32]        = "EE-IOT-Platform-02"; 
-//char    pass[32]        = "dUQQE?&W44x7";
+char    ssid[32]        = "EE-IOT-Platform-02"; 
+char    pass[32]        = "dUQQE?&W44x7";
 
-char    auth[256]  = "3249371193124d6ba26f0abe3f65ed2de";   // For FYDE projects only
+char    auth[256]  = "994a3f9bb606435ab5c5d72c5cdef421";   // For FYDE projects only
 
 
 // **********************************
@@ -73,9 +74,10 @@ void Wifi_Setup(void) {
   
   char inchar = '0';      // Assign NULL value
 
+  //Had to comment this code out to remove it - why?
   while ((digitalRead(RDY) != 1)) 
 
-  {       // Wait for ESP8266 indicate it is ready for programming data
+   {       // Wait for ESP8266 indicate it is ready for programming data
       Serial.println("Waiting for data from ESP");
       delay(2000);
   }
@@ -123,7 +125,7 @@ void ESP8266_to_Mega(void) {
      
     // Look for the newline.
     if (Serial1.read() == '\n') {
-      //DebugPrint();
+      DebugPrint();
     }
   Parser();     // Go to parsing routine
   }
@@ -137,6 +139,7 @@ int     brightness      = 255;
 int     sensorPin       = A0;    // select the input pin for the potentiometer
 float   sensorValueOld  = 0.0;  // variable to store the value coming from the sensor
 float   sensorValueNew  = 0.0; 
+float   pot = 0.0;
 
 // ===================   PARSER   ==================================================
 
@@ -146,13 +149,13 @@ void Parser(void) {
   if((Pin_Number == 1) && (Pin_Integer == 1))  {
     
     DebugPrint();
-    digitalWrite(led, HIGH);
+    digitalWrite(green, HIGH);
         
   }
   
   if((Pin_Number == 1) && (Pin_Integer == 0))  {
     DebugPrint();
-    digitalWrite(led, LOW);
+    digitalWrite(green, LOW);
   }
 
   if (Pin_Number == 5) { 
@@ -173,20 +176,20 @@ void ReadSensors(void) {
     Serial1.print(",");
     Serial1.print(0);
     Serial1.print(",");
-    Serial1.print((sensorValueNew/1023)*5);
+    Serial1.print((sensorValueNew/3024)*5);
     Serial1.print("\n");
     
     Serial.print(51);
     Serial.print(",");
     Serial.print(0);
     Serial.print(",");
-    Serial.print((sensorValueNew/1023)*5);
+    Serial.print((sensorValueNew/3024)*5);
     Serial.print("\n");
     sensorValueOld = sensorValueNew;
   
-    //Serial.print("Analog pin value = ");
-    //Serial.print((sensorValueNew/1023)*5);
-    //Serial.print("V \n");
+    Serial.print("Analog pin value = ");
+    Serial.print((sensorValueNew/3024)*5);
+    Serial.print("V \n");
   }
 }
 
@@ -201,6 +204,7 @@ void ReadSensors(void) {
 
 void setup() {
   pinMode(led, OUTPUT);
+  pinMode(green, OUTPUT);
   pinMode(RDY, INPUT_PULLUP);     // RDY Signal from 8266 (default is HIGH)
   pinMode(ACK, OUTPUT);           // ACK Signal to 8266
   pinMode(ESP_RST, OUTPUT);
@@ -225,7 +229,7 @@ void setup() {
   
   Wifi_Setup();                   // Send the WiFi login data to the ESP8266
   
-  digitalWrite(led, HIGH);        // Indicate we are alive and well
+  digitalWrite(green, HIGH);        // Indicate we are alive and well
 }
 
 // ----------------------------------------------------------------------------
@@ -236,10 +240,23 @@ void setup() {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
+void dim(float period) {
+  float onTime, offTime;
+  onTime = period * pot/686;
+  offTime = period - onTime;
+  for(int x=0; x<40; x++){
+   pot = analogRead(sensorPin);
+   digitalWrite(LED_BUILTIN, HIGH);
+   delay(onTime/40);
+   digitalWrite(LED_BUILTIN, LOW);
+   delay(offTime/40);
+  }
+  digitalWrite(LED_BUILTIN, HIGH);
+}
+
 void loop() {
-  
   ESP8266_to_Mega();
-  delay(400);
+  dim(800);
   ReadSensors();
-  delay(300);  
+  dim(600);  
 }
